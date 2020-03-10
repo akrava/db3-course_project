@@ -131,3 +131,5 @@ dmypy.json
 # others
 .idea/
 .vscode/
+temp/
+backups/

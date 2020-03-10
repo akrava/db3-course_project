@@ -7,6 +7,11 @@ verify_ssl = true
 
 [packages]
 cassandra-driver = "*"
+python-dotenv = "*"
+gtfs-realtime-bindings = "*"
+requests = "*"
+protobuf = "*"
+pandas = "*"
 
 [requires]
 python_version = "3.6"
