@@ -1,3 +1,10 @@
+from models.agency import Agency, AgencyModel
+from models.routes import Route, RoutesModel
+from models.shapes import Shape, ShapesModel
+from models.stop_times import StopTime, StopTimesModel
+from models.stops import Stop, StopsModel
+from models.trips import Trip, TripsModel
+from data_processing.realtime_information import GTFSRealtime
 import requests
 import zipfile
 import shutil
@@ -36,3 +43,38 @@ class GTFSStatic:
         }
         shutil.rmtree(self.__temp_dir)
         return result
+
+    def save_static_info_to_db(self):
+        self.save_zip()
+        result = self.parse()
+
+        agency = [Agency(x) for x in result["agency"].T.to_dict().values()]
+        print("Uploading agency...")
+        if not all([AgencyModel().create(x) for x in agency]):
+            print("Error while uploading agency")
+
+        routes = [Route(x) for x in result["routes"].T.to_dict().values()]
+        print("Uploading routes...")
+        if not all([RoutesModel().create(x) for x in routes]):
+            print("Error while uploading routes")
+
+        shapes = [Shape(x) for x in result["shapes"].T.to_dict().values()]
+        shapes = GTFSRealtime.get_distinct_by_keys(shapes, ['shape_id'], lambda x, y: True)
+        print("Uploading shapes...")
+        if not all([ShapesModel().create(x) for x in shapes]):
+            print("Error while uploading shapes")
+
+        stop_times = [StopTime(x) for x in result["stop_times"].T.to_dict().values()]
+        print("Uploading stop times...")
+        if not all([StopTimesModel().create(x) for x in stop_times]):
+            print("Error while uploading stop times")
+
+        stops = [Stop(x) for x in result["stops"].T.to_dict().values()]
+        print("Uploading stops...")
+        if not all([StopsModel().create(x) for x in stops]):
+            print("Error while uploading stops")
+
+        trips = [Trip(x) for x in result["trips"].T.to_dict().values() if float(x["shape_id"]).is_integer()]
+        print("Uploading trips...")
+        if not all([TripsModel().create(x) for x in trips]):
+            print("Error while uploading trips")

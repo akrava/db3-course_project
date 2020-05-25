@@ -1,4 +1,5 @@
 from google.transit import gtfs_realtime_pb2
+from models.vehicle_position import VehiclePosition, VehiclePositionModel
 import requests
 
 
@@ -44,7 +45,7 @@ class GTFSRealtime:
         return True
 
     @staticmethod
-    def __get_distinct_by_keys(values, keys, lambda_compare):
+    def get_distinct_by_keys(values, keys, lambda_compare):
         data_dict = dict()
         for val in values:
             value_of_key = val
@@ -60,5 +61,14 @@ class GTFSRealtime:
 
     def filter_data(self, feed_entities: []):
         data = [feed for feed in feed_entities if self.__filter_condition(feed)]
-        data = self.__get_distinct_by_keys(data, ['id'], self.__get_newest_feed)
-        return self.__get_distinct_by_keys(data, ['vehicle', 'vehicle', 'id'], self.__get_newest_feed)
+        data = self.get_distinct_by_keys(data, ['id'], self.__get_newest_feed)
+        return self.get_distinct_by_keys(data, ['vehicle', 'vehicle', 'id'], self.__get_newest_feed)
+
+    def save_current_feed_to_db(self):
+        data = self.get_bytes()
+        entities = self.parse(data)
+        filtered = self.filter_data(entities)
+        objects_to_save = [VehiclePosition(x) for x in filtered]
+        model = VehiclePositionModel()
+        for obj in objects_to_save:
+            model.create(obj)
